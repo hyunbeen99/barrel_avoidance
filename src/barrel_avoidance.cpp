@@ -1,4 +1,4 @@
-#include "static_avoidance/static_avoidance_hb.h"
+#include "barrel_avoidance/barrel_avoidance.h"
 
 void StaticAvoidance::initSetup() {
     pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/ctrl_cmd", 10);
