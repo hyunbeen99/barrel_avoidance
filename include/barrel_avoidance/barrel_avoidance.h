@@ -8,6 +8,7 @@
 #include "pcl_conversions/pcl_conversions.h"
 #include "pcl_ros/point_cloud.h"
 #include "pcl_ros/transforms.h"
+#include "velodyne_pointcloud/point_types.h"
 
 #include "pcl/point_types.h"
 #include "pcl/io/pcd_io.h"
@@ -34,71 +35,61 @@
 
 #include "clustering.cpp"
 
-#define LEFT_ESCAPE_STEER -15
-#define RIGHT_ESCAPE_STEER 15
-#define ESCAPE_STEER 15
-
-#define DEFAULT_SPEED 1.0
-#define AVOID_SPEED 1.0
-#define ESCAPE_SPEED 1.0
-
-#define DIST 2.0
-
 #define _USE_MATH_DEFINES
+#define STANDARD_DIST 6.0
+
 typedef pcl::PointXYZI PointType;
 
 class StaticAvoidance{
-private:
-	enum {
-		AVOID_CLOSE = 0,
-		AVOID_FAR = 1,
-		ESCAPE = 2
-	};
 
-	// node handle
+private:
     ros::NodeHandle nh_;
 
-	// publishers
+	//publisher
     ros::Publisher pub_;
     ros::Publisher marker_pub_;
 
-	// subsribers
+	//subscriber
     ros::Subscriber sub_;
+	ros::Subscriber imu_sub_;
 
-	// data
-    vector<geometry_msgs::Point> obstacles_;
+	//message
     ackermann_msgs::AckermannDriveStamped ackerData_;
-        
-	// values
+	
+	//data
+    vector<geometry_msgs::Point> center_point_;
+
+    //flag
+    bool get_init_imu;
+
+	//values
     int status_;
+	int closest_obs_index;
 
-	double steer_;
-	double speed_;
+	double roll, pitch, yaw;
+    double yaw_degree_;
+    double init_yaw_;
+	double dist;
 
-	int obs_count_;
-	bool init_flag_;
 
 public:
+
     void initSetup();
     void pointCallback(const sensor_msgs::PointCloud2ConstPtr &input);
+    void imuCallback(const sensor_msgs::ImuConstPtr &imu);
+	
+	void visualize(vector<geometry_msgs::Point> input_points);
+    void visualize(geometry_msgs::Point point);
 
     void run();
-	void go();
-
-	void avoidClose();
-	void avoidFar();
-	void escape();
     
-    double calcSteer(geometry_msgs::Point p);
-	double calcAngle(geometry_msgs::Point p);
     double getDist(geometry_msgs::Point p);
-	
-	void visualize(vector<geometry_msgs::Point> obs_points);
-    void visualize(geometry_msgs::Point point);
-	void printStatus();
+    double calcSteer(geometry_msgs::Point p);
+	void print(vector<geometry_msgs::Point> points);
 
     StaticAvoidance() {
         initSetup();
     }
+
 };
 
