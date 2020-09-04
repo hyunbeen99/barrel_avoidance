@@ -47,7 +47,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 #	src/static_avoidance.cpp
 #)
 
-add_executable(barrel_avoidance_vlp16 src/static_avoidance_jinuk.cpp)
+add_executable(barrel_avoidance_vlp16 src/barrel_avoidance.cpp)
 
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 

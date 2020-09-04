@@ -1,4 +1,4 @@
-#include "barrel_avoidance/static_avoidance_jinuk.h"
+#include "barrel_avoidance/barrel_avoidance.h"
 
 void StaticAvoidance::initSetup() {
 	// ros
