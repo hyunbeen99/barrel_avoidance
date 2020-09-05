@@ -36,7 +36,7 @@
 #include "clustering.cpp"
 
 #define _USE_MATH_DEFINES
-#define STANDARD_DIST 6.0
+#define STANDARD_DIST 3.5
 
 typedef pcl::PointXYZI PointType;
 

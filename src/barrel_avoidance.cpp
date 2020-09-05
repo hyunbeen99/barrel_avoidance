@@ -9,7 +9,7 @@ void StaticAvoidance::initSetup() {
     status_ = 0;
     init_yaw_ = 0;
     yaw_degree_ = 0;
-    get_init_imu = false;
+    get_init_imu = true;
 
 }
 
@@ -25,7 +25,7 @@ void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 	yaw_degree_ = yaw*180/M_PI;
 
 	// get inital degree once at status 1
-    if (get_init_imu == true) {
+    if (get_init_imu && status_ == 2) {
         init_yaw_ = yaw_degree_;
         get_init_imu = false;
     }
@@ -46,7 +46,7 @@ void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &inpu
 		visualize(center_point_);
 	}
 	else if (status_ == 2){
-		center_point_ = Cluster().cluster(input, 1, 8, -1, 3); 
+		center_point_ = Cluster().cluster(input, 1, 10, -1, 3); 
 		print(center_point_);
 		visualize(center_point_);
 	}
@@ -56,15 +56,23 @@ void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &inpu
 void StaticAvoidance::run() {
 
 //	cout << "###########################################" << endl;
-//	cout << "STATUS :: " << status_ << endl;
+    cout << "STATUS :: " << status_ << endl;
 
 	//seek two obstacles before start
 	try{
 		if (status_ == 1) {
-			dist = getDist(center_point_.at(1));
 
-			ackerData_.drive.steering_angle = calcSteer(center_point_.at(1));
-			ackerData_.drive.speed = 1.2;
+			if(center_point_.size() == 2) {
+				ackerData_.drive.steering_angle = calcSteer(center_point_.at(1));
+				ackerData_.drive.speed = 1;
+				pub_.publish(ackerData_);
+				return;
+			}
+
+			dist = getDist(center_point_.at(0));
+
+			ackerData_.drive.steering_angle = calcSteer(center_point_.at(0));
+			ackerData_.drive.speed = 1.0;
 
 //		    cout << "DIST : " << dist << endl;
 
@@ -75,14 +83,12 @@ void StaticAvoidance::run() {
 		//seek only one obstacle
 		else if (status_ == 2){
 
-			get_init_imu = true; 
-
 //			cout << "INIT YAW           : " << init_yaw_ << endl; 
 
 			geometry_msgs::Point goalPoint_;
 
 			goalPoint_.x = center_point_.at(0).x; 
-			goalPoint_.y = center_point_.at(0).y + 1.5;
+			goalPoint_.y = center_point_.at(0).y + 1;
 
 //			cout << "GOALPOINT_X         : " << goalPoint_.x << endl;
 //			cout << "GOALPOINT_Y         : " << goalPoint_.y << endl;
@@ -90,11 +96,13 @@ void StaticAvoidance::run() {
 			visualize(goalPoint_);
 
 			ackerData_.drive.steering_angle = calcSteer(goalPoint_);
-			ackerData_.drive.speed = 2.0;
+			ackerData_.drive.speed = 1.0;
 
-			if (abs(init_yaw_ - yaw_degree_) >= 10) {
-				ackerData_.drive.steering_angle = 0.5*(abs(init_yaw_ - yaw_degree_));
-				ackerData_.drive.speed = 1.2;
+			cout << "DIFF   : " << abs(init_yaw_ - yaw_degree_) << endl;
+
+			if (abs(init_yaw_ - yaw_degree_) >= 8) {
+				ackerData_.drive.steering_angle = 25;
+				ackerData_.drive.speed = 1.0;
 			}
 
 		}
@@ -104,7 +112,7 @@ void StaticAvoidance::run() {
 
 	} catch(const std::out_of_range& oor){ 
 		ackerData_.drive.steering_angle = 0.0; 
-		ackerData_.drive.speed = 1.2;
+		ackerData_.drive.speed = 1.0;
 
 		cout << "No Obstacles" << endl;
 	}
