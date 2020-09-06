@@ -58,18 +58,21 @@ private:
 	
 	//data
     vector<geometry_msgs::Point> center_point_;
+    vector<geometry_msgs::Point> fixed_point_;
 
     //flag
-    bool get_init_imu;
+	bool get_first_imu;
+	bool get_second_imu;
 
 	//values
     int status_;
-	int closest_obs_index;
 
 	double roll, pitch, yaw;
     double yaw_degree_;
-    double init_yaw_;
 	double dist;
+
+	double init_yaw_;
+	double second_yaw_;
 
 
 public:

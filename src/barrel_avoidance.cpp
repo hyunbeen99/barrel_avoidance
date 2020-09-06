@@ -8,12 +8,16 @@ void StaticAvoidance::initSetup() {
 
     status_ = 0;
     init_yaw_ = 0;
+	second_yaw_ = 0;
     yaw_degree_ = 0;
-    get_init_imu = true;
+
+    get_first_imu = true;
+    get_second_imu = true;
 
 }
 
 void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
+
 	tf::Quaternion q(
 			imu->orientation.x,
 			imu->orientation.y,
@@ -24,11 +28,16 @@ void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 
 	yaw_degree_ = yaw*180/M_PI;
 
-	// get inital degree once at status 1
-    if (get_init_imu && status_ == 2) {
+    if (get_first_imu && status_ == 1) {
         init_yaw_ = yaw_degree_;
-        get_init_imu = false;
+        get_first_imu = false;
     }
+
+    if (get_second_imu && status_ == 2) {
+        second_yaw_ = yaw_degree_;
+        get_second_imu = false;
+    }
+
 }
 
 void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &input) {
@@ -37,7 +46,6 @@ void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &inpu
     if (status_ == 0){
         center_point_ = Cluster().cluster(input, 1, 15, -2.5, 2.5); 
 		print(center_point_);
-        if (center_point_.size() >= 1) status_++;
 		visualize(center_point_);
     }
 	else if (status_ == 1){
@@ -55,56 +63,62 @@ void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &inpu
 
 void StaticAvoidance::run() {
 
-//	cout << "###########################################" << endl;
     cout << "STATUS :: " << status_ << endl;
 
 	//seek two obstacles before start
 	try{
-		if (status_ == 1) {
+		if(status_ == 0){
+			if (center_point_.size() == 2) {
+				fixed_point_ = center_point_;
+				status_++;
+			}
+		}
+		else if (status_ == 1) {
+
+			geometry_msgs::Point goalPoint;
 
 			if(center_point_.size() == 2) {
-				ackerData_.drive.steering_angle = calcSteer(center_point_.at(1));
+				
+				goalPoint.x = center_point_.at(0).x;
+				goalPoint.y = center_point_.at(1).y;
+
+				ackerData_.drive.steering_angle =  2* calcSteer(goalPoint);
 				ackerData_.drive.speed = 1;
-				pub_.publish(ackerData_);
-				return;
+
+				if(abs(init_yaw_ - yaw_degree_) >= 3){
+					ackerData_.drive.steering_angle =  calcSteer(center_point_.at(1));
+				}
+
+				dist = getDist(center_point_.at(1));
+				if (dist < STANDARD_DIST) status_++;
+
+			}else if (center_point_.size() < 2){
+
+				ackerData_.drive.steering_angle = calcSteer(center_point_.at(0));
+				ackerData_.drive.speed = 1.0;
+
+				dist = getDist(center_point_.at(0));
+
+				if (dist < STANDARD_DIST) status_++;
 			}
-
-			dist = getDist(center_point_.at(0));
-
-			ackerData_.drive.steering_angle = calcSteer(center_point_.at(0));
-			ackerData_.drive.speed = 1.0;
-
-//		    cout << "DIST : " << dist << endl;
-
-			if (dist < STANDARD_DIST) status_++;
 
 		}   
 
-		//seek only one obstacle
 		else if (status_ == 2){
 
-//			cout << "INIT YAW           : " << init_yaw_ << endl; 
-
-			geometry_msgs::Point goalPoint_;
-
-			goalPoint_.x = center_point_.at(0).x; 
-			goalPoint_.y = center_point_.at(0).y + 1;
-
-//			cout << "GOALPOINT_X         : " << goalPoint_.x << endl;
-//			cout << "GOALPOINT_Y         : " << goalPoint_.y << endl;
-
-			visualize(goalPoint_);
-
-			ackerData_.drive.steering_angle = calcSteer(goalPoint_);
-			ackerData_.drive.speed = 1.0;
-
-			cout << "DIFF   : " << abs(init_yaw_ - yaw_degree_) << endl;
-
-			if (abs(init_yaw_ - yaw_degree_) >= 8) {
+			if (fixed_point_.at(0).y > fixed_point_.at(1).y){
+				ackerData_.drive.steering_angle = -25;
+			}
+			else if (fixed_point_.at(0).y < fixed_point_.at(1).y){
 				ackerData_.drive.steering_angle = 25;
-				ackerData_.drive.speed = 1.0;
 			}
 
+			if (abs(second_yaw_ - yaw_degree_) > 10) {
+				int steer = (second_yaw_ > yaw_degree_) ? 25 : -25;
+				
+				ackerData_.drive.steering_angle = steer;
+				ackerData_.drive.speed = 1.0;
+			}
 		}
 
 //		cout << "###########################################" << endl;
@@ -114,7 +128,7 @@ void StaticAvoidance::run() {
 		ackerData_.drive.steering_angle = 0.0; 
 		ackerData_.drive.speed = 1.0;
 
-		cout << "No Obstacles" << endl;
+		cout << "out of range occured" << endl;
 	}
 
 	pub_.publish(ackerData_);
