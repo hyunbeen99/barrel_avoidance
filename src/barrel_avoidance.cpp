@@ -74,9 +74,6 @@ void StaticAvoidance::run() {
 		}
 		else if (status_ == 1) {
 
-			cout << "FIXEDPOINT_0 = " << fixed_point_.at(0) << endl;
-			cout << "FIXEDPOINT_1 = " << fixed_point_.at(1) << endl;
-
 			geometry_msgs::Point goalPoint;
 
 			if(center_point_.size() == 2) {
