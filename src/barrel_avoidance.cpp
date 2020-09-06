@@ -10,7 +10,7 @@ void StaticAvoidance::initSetup() {
     init_yaw_ = 0;
 	second_yaw_ = 0;
     yaw_degree_ = 0;
-
+	
     get_first_imu = true;
     get_second_imu = true;
 
@@ -42,19 +42,18 @@ void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 
 void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
-
     if (status_ == 0){
         center_point_ = Cluster().cluster(input, 1, 15, -2.5, 2.5); 
 		print(center_point_);
 		visualize(center_point_);
     }
 	else if (status_ == 1){
-		center_point_ = Cluster().cluster(input, 1, 10, -2, 2); 
+		center_point_ = Cluster().cluster(input, 1, 10, -0.5, 1); 
 		print(center_point_);
 		visualize(center_point_);
 	}
 	else if (status_ == 2){
-		center_point_ = Cluster().cluster(input, 1, 10, -1, 3); 
+		center_point_ = Cluster().cluster(input, 1, 10, -0.6, 3); 
 		print(center_point_);
 		visualize(center_point_);
 	}
@@ -75,6 +74,9 @@ void StaticAvoidance::run() {
 		}
 		else if (status_ == 1) {
 
+			cout << "FIXEDPOINT_0 = " << fixed_point_.at(0) << endl;
+			cout << "FIXEDPOINT_1 = " << fixed_point_.at(1) << endl;
+
 			geometry_msgs::Point goalPoint;
 
 			if(center_point_.size() == 2) {
@@ -90,7 +92,6 @@ void StaticAvoidance::run() {
 				}
 
 				dist = getDist(center_point_.at(1));
-				if (dist < STANDARD_DIST) status_++;
 
 			}else if (center_point_.size() < 2){
 
@@ -99,8 +100,9 @@ void StaticAvoidance::run() {
 
 				dist = getDist(center_point_.at(0));
 
-				if (dist < STANDARD_DIST) status_++;
 			}
+
+			if (dist < STANDARD_DIST) status_++;
 
 		}   
 
@@ -112,6 +114,8 @@ void StaticAvoidance::run() {
 			else if (fixed_point_.at(0).y < fixed_point_.at(1).y){
 				ackerData_.drive.steering_angle = 25;
 			}
+
+			cout << "DIFF = " << abs(second_yaw_ - yaw_degree_) << endl;
 
 			if (abs(second_yaw_ - yaw_degree_) > 10) {
 				int steer = (second_yaw_ > yaw_degree_) ? 25 : -25;
