@@ -13,7 +13,7 @@ void StaticAvoidance::initSetup() {
 }
 
 void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &input) {
-	obstacles_ = Cluster().cluster(input, 0.5, 10, -3.0, 3.0);
+	obstacles_ = Cluster().cluster(input, 0.5, 10, -0.5, 1.0);
 }
 
 void StaticAvoidance::run() {
