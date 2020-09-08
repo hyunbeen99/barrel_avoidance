@@ -34,15 +34,17 @@
 
 #include "clustering.cpp"
 
-#define LEFT_ESCAPE_STEER -15
-#define RIGHT_ESCAPE_STEER 15
-#define ESCAPE_STEER 15
+#define ESCAPE_LEFT_STEER -15
+#define ESCAPE_RIGHT_STEER 15
 
 #define DEFAULT_SPEED 1.0
 #define AVOID_SPEED 1.0
 #define ESCAPE_SPEED 1.0
 
 #define DIST 2.0
+
+#define LEFT 100
+#define RIGHT 200
 
 #define _USE_MATH_DEFINES
 typedef pcl::PointXYZI PointType;
@@ -77,6 +79,9 @@ private:
 
 	int obs_count_;
 	bool init_flag_;
+	bool obs_status_flag_;
+
+	int obs_status_;
 
 public:
     void initSetup();
@@ -88,6 +93,7 @@ public:
 	void avoidClose();
 	void avoidFar();
 	void escape();
+	void fixObstacleStatus();
     
     double calcSteer(geometry_msgs::Point p);
 	double calcAngle(geometry_msgs::Point p);

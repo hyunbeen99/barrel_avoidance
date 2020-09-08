@@ -9,17 +9,36 @@ void StaticAvoidance::initSetup() {
 	// values
 	status_ = AVOID_CLOSE;
 	obs_count_ = 0;
+	obs_status_ = -1;
+
 	init_flag_ = false;
+	obs_status_flag_ = false;
 }
 
 void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &input) {
-	obstacles_ = Cluster().cluster(input, 0.5, 10, -3.0, 3.0);
+	switch(status_) {
+		case AVOID_FAR:
+			obstacles_ = Cluster().cluster(input, 0.5, 5, -1.5, 1.5);
+			break;
+		default:
+			obstacles_ = Cluster().cluster(input, 0.5, 10, -2.0, 2.0);
+			break;
+	}
 }
 
 void StaticAvoidance::run() {
 	if(!init_flag_) { // sleep once after node starts
 		ros::Duration(0.5).sleep();
 		init_flag_ = true;
+	}
+
+	if(!obs_status_flag_) {
+		if(obstacles_.size() == 2) {
+			obs_status_ = (obstacles_.at(0).y > obstacles_.at(1).y) ? LEFT : RIGHT;
+			obs_status_flag_ = true;
+		} else {
+			return;
+		}
 	}
 
 	try {
@@ -66,12 +85,12 @@ void StaticAvoidance::avoidClose() {
 
 	geometry_msgs::Point point;
 	point.x = obstacles_.at(0).x;
-	point.y = obstacles_.at(1).y - 1.2; 
+	point.y = obstacles_.at(1).y; 
 
 	visualize(point);
 	visualize(obstacles_);
 
-	steer_ = calcSteer(point);
+	steer_ = calcSteer(point) * 1.1;
 	speed_ = DEFAULT_SPEED;
 }
 
@@ -81,14 +100,14 @@ void StaticAvoidance::avoidFar() {
 
 		geometry_msgs::Point point;
 		point.x = obstacles_.at(0).x;
-		point.y = obstacles_.at(0).y + 2.0;
+		point.y = obstacles_.at(0).y;
 
 		visualize(point);
 		visualize(obstacles_);
 
 		cout << "dist -> " << getDist(obstacles_.at(0)) << endl;
 
-		steer_ = calcSteer(point);
+		steer_ = calcSteer(point) * 1.2;
 		speed_ = DEFAULT_SPEED;
 	} else {
 		status_++;
@@ -97,7 +116,7 @@ void StaticAvoidance::avoidFar() {
 
 void StaticAvoidance::escape() {
 	//steer_ = (first_obs_dir_ == RIGHT) ? LEFT_ESCAPE_STEER : RIGHT_ESCAPE_STEER;
-	steer_ = ESCAPE_STEER;
+	steer_ = (obs_status_ == RIGHT) ? ESCAPE_LEFT_STEER : ESCAPE_RIGHT_STEER;
 	speed_ = ESCAPE_SPEED;
 }
 
@@ -105,6 +124,9 @@ void StaticAvoidance::go() {
 	ackerData_.drive.steering_angle = steer_;
 	ackerData_.drive.speed = speed_;
 	pub_.publish(ackerData_);
+}
+
+void StaticAvoidance::fixObstacleStatus() {
 }
 
 void StaticAvoidance::printStatus() {
