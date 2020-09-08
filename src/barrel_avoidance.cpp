@@ -21,7 +21,7 @@ void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &inpu
 			obstacles_ = Cluster().cluster(input, 0.5, 5, -1.5, 1.5);
 			break;
 		default:
-			obstacles_ = Cluster().cluster(input, 0.5, 10, -2.0, 2.0);
+			obstacles_ = Cluster().cluster(input, 0.5, 10, -3.0, 3.0);
 			break;
 	}
 }
@@ -90,7 +90,7 @@ void StaticAvoidance::avoidClose() {
 	visualize(point);
 	visualize(obstacles_);
 
-	steer_ = calcSteer(point) * 1.1;
+	steer_ = calcSteer(point) * 1.0;
 	speed_ = DEFAULT_SPEED;
 }
 
@@ -107,7 +107,7 @@ void StaticAvoidance::avoidFar() {
 
 		cout << "dist -> " << getDist(obstacles_.at(0)) << endl;
 
-		steer_ = calcSteer(point) * 1.2;
+		steer_ = calcSteer(point) * 1.0;
 		speed_ = DEFAULT_SPEED;
 	} else {
 		status_++;
