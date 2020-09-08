@@ -43,17 +43,17 @@ void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
     if (status_ == 0){
-        center_point_ = Cluster().cluster(input, 1, 15, -2.5, 2.5); 
+        center_point_ = Cluster().cluster(input, 1, 15, -1.0, 1.0); 
 		print(center_point_);
 		visualize(center_point_);
     }
     else if (status_ == 1){
-		center_point_ = Cluster().cluster(input, 1, 10, -0.5, 1); 
+		center_point_ = Cluster().cluster(input, 1, 10, -0.8, 1.5); 
 		print(center_point_);
 		visualize(center_point_);
     }
     else if (status_ == 2){
-		center_point_ = Cluster().cluster(input, 1, 10, -0.6, 3); 
+		center_point_ = Cluster().cluster(input, 1, 5, -0.8, 1.5); 
 		print(center_point_);
 		visualize(center_point_);
     }   
@@ -74,6 +74,7 @@ void StaticAvoidance::run() {
 		}
 		else if (status_ == 1) {
 
+			cout << "DIFF = " << abs(second_yaw_ - yaw_degree_) << endl;
 			geometry_msgs::Point goalPoint;
 
 			if(center_point_.size() == 2) {
@@ -114,12 +115,16 @@ void StaticAvoidance::run() {
 
 			cout << "DIFF = " << abs(second_yaw_ - yaw_degree_) << endl;
 
-			if (abs(second_yaw_ - yaw_degree_) > 10) {
-				int steer = (second_yaw_ > yaw_degree_) ? 25 : -25;
-				
-				ackerData_.drive.steering_angle = steer;
-				ackerData_.drive.speed = 1.0;
+			if (abs(second_yaw_ - yaw_degree_) > 3) {
+				steer = (second_yaw_ > yaw_degree_) ? 25 : -25;
+				status_++;
 			}
+		}
+
+		else if (status_ == 3){
+			cout << "DIFF = " << abs(second_yaw_ - yaw_degree_) << endl;
+			ackerData_.drive.steering_angle = steer;
+			ackerData_.drive.speed = 1.2;
 		}
 
 //		cout << "###########################################" << endl;

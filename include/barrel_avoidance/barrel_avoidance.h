@@ -35,7 +35,7 @@
 #include "clustering.cpp"
 
 #define _USE_MATH_DEFINES
-#define STANDARD_DIST 3.5
+#define STANDARD_DIST 3.7
 
 typedef pcl::PointXYZI PointType;
 
@@ -65,6 +65,7 @@ private:
 
 	//values
     int status_;
+	int steer;
 
 	double roll, pitch, yaw;
     double yaw_degree_;
