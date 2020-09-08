@@ -8,7 +8,7 @@ void StaticAvoidance::initSetup() {
 
     status_ = 0;
     init_yaw_ = 0;
-	second_yaw_ = 0;
+    second_yaw_ = 0;
     yaw_degree_ = 0;
 	
     get_first_imu = true;
@@ -19,10 +19,10 @@ void StaticAvoidance::initSetup() {
 void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 
 	tf::Quaternion q(
-			imu->orientation.x,
-			imu->orientation.y,
-			imu->orientation.z,
-			imu->orientation.w);
+		imu->orientation.x,
+		imu->orientation.y,
+		imu->orientation.z,
+		imu->orientation.w);
 	tf::Matrix3x3 m(q);
 	m.getRPY(roll, pitch, yaw);
 
@@ -47,16 +47,16 @@ void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &inpu
 		print(center_point_);
 		visualize(center_point_);
     }
-	else if (status_ == 1){
+    else if (status_ == 1){
 		center_point_ = Cluster().cluster(input, 1, 10, -0.5, 1); 
 		print(center_point_);
 		visualize(center_point_);
-	}
-	else if (status_ == 2){
+    }
+    else if (status_ == 2){
 		center_point_ = Cluster().cluster(input, 1, 10, -0.6, 3); 
 		print(center_point_);
 		visualize(center_point_);
-	}
+    }   
 
 }
 
