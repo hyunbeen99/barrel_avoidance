@@ -36,6 +36,8 @@
 
 #define _USE_MATH_DEFINES
 #define STANDARD_DIST 4.5
+#define LEFT_FIRST 100
+#define RIGHT_FIRST 200
 
 #define SPEED 0.0
 #define SPEED1 1.5 
@@ -70,6 +72,7 @@ private:
     //flag
 	bool get_first_imu;
 	bool get_second_imu;
+	int obs_align_;
 
 	//values
     int status_;
@@ -94,6 +97,7 @@ public:
     void visualize(geometry_msgs::Point point);
 
     void run();
+	void fixObstacles();
     
     double getDist(geometry_msgs::Point p);
     double calcSteer(geometry_msgs::Point p);

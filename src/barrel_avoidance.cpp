@@ -13,6 +13,8 @@ void StaticAvoidance::initSetup() {
 	
     get_first_imu = true;
     get_second_imu = true;
+
+	obs_align_ = -1;
 }
 
 ros::NodeHandle StaticAvoidance::getNodeHandle() {
@@ -70,10 +72,7 @@ void StaticAvoidance::run() {
 	//seek two obstacles before start
 	try{
 		if(status_ == 0){
-			if (center_point_.size() == 2) {
-				fixed_point_ = center_point_;
-				status_++;
-			}
+			fixObstacles();
 		}
 		else if (status_ == 1) {
 
@@ -108,27 +107,15 @@ void StaticAvoidance::run() {
 		}   
 
 		else if (status_ == 2){
-
-			if (fixed_point_.at(0).y > fixed_point_.at(1).y){
-				ackerData_.drive.steering_angle = MINSTEER;
-			}
-			else if (fixed_point_.at(0).y < fixed_point_.at(1).y){
-				ackerData_.drive.steering_angle = MAXSTEER;
-			}
-
+			
+			ackerData_.drive.steering_angle = (obs_align_ == LEFT_FIRST) ? MINSTEER : MAXSTEER;
 			cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
 
-			if (fixed_point_.at(0).y > fixed_point_.at(1).y){ // left first
-				if (abs(second_yaw_ - yaw_degree_) > 22) {
-					steer = (second_yaw_ > yaw_degree_) ? MINSTEER : MAXSTEER;
-					status_++;
-				}
-			}
-			else if (fixed_point_.at(0).y < fixed_point_.at(1).y){ // right first
-				if (abs(second_yaw_ - yaw_degree_) > 30) {
-					steer = (second_yaw_ > yaw_degree_) ? MINSTEER : MAXSTEER;
-					status_++;
-				}
+			int yaw_diff = (obs_align_ == LEFT_FIRST) ? 22 : 30;
+
+			if (abs(second_yaw_ - yaw_degree_) > yaw_diff) {
+				steer = (second_yaw_ > yaw_degree_) ? MINSTEER : MAXSTEER;
+				status_++;
 			}
 		}
 
@@ -141,9 +128,6 @@ void StaticAvoidance::run() {
 			nh_.setParam("/static_finish1", is_static_finished);
 		}
 
-//		cout << "###########################################" << endl;
-//		cout << endl;
-
 	} catch(const std::out_of_range& oor){ 
 		ackerData_.drive.steering_angle = STEER; 
 		ackerData_.drive.speed = SPEED;
@@ -151,6 +135,21 @@ void StaticAvoidance::run() {
 	}
 
 	pub_.publish(ackerData_);
+}
+
+void StaticAvoidance::fixObstacles(){
+
+	if (center_point_.size() == 2){
+
+		fixed_point_ = center_point_;
+
+		obs_align_ = (fixed_point_.at(0).y > fixed_point_.at(1).y) ? LEFT_FIRST : RIGHT_FIRST;
+		status_++;
+
+	}else if (center_point_.size() < 2){
+		ackerData_.drive.steering_angle = STEER; 
+		ackerData_.drive.speed = SPEED;
+	} 
 }
 
 double StaticAvoidance::getDist(geometry_msgs::Point point_){
