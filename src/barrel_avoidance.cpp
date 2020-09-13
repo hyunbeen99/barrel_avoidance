@@ -133,6 +133,9 @@ void StaticAvoidance::run() {
 			cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
 			ackerData_.drive.steering_angle = steer;
 			ackerData_.drive.speed = SPEED3;
+
+			bool is_static_finished = true;
+			nh_.setParam("/static_finish1", is_static_finished);
 		}
 
 //		cout << "###########################################" << endl;
@@ -216,7 +219,13 @@ int main(int argc, char **argv) {
     StaticAvoidance sa;
 
     while(ros::ok()) {
-		sa.run();
+		int cur_state = -2;
+
+		nh_.getParam("/kuuve_state", cur_state); // cur_state is STATIC_OBS1 in kuuve control
+
+		if (cur_state == 1){
+			sa.run();
+		}
 		ros::spinOnce();
     }
 }
