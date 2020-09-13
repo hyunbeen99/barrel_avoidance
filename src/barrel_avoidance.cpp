@@ -1,7 +1,7 @@
 #include "barrel_avoidance/barrel_avoidance.h"
 
 void StaticAvoidance::initSetup() {
-    pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/ctrl_cmd", 10);
+    pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/lidar_ackermann", 10);
     marker_pub_ = nh_.advertise<visualization_msgs::Marker>("/output_points", 10);
     sub_ = nh_.subscribe("/velodyne_points", 10, &StaticAvoidance::pointCallback, this);
     imu_sub_ = nh_.subscribe("/gx5/imu/data", 10, &StaticAvoidance::imuCallback, this);
@@ -13,7 +13,10 @@ void StaticAvoidance::initSetup() {
 	
     get_first_imu = true;
     get_second_imu = true;
+}
 
+ros::NodeHandle StaticAvoidance::getNodeHandle() {
+	return this->nh_;
 }
 
 void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
@@ -218,10 +221,10 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "static_avoidance_vlp16");
     StaticAvoidance sa;
 
-    while(ros::ok()) {
-		int cur_state = -2;
+	int cur_state = -2;
+	sa.getNodeHandle().getParam("/kuuve_state", cur_state); // cur_state is STATIC_OBS1 in kuuve control
 
-		nh_.getParam("/kuuve_state", cur_state); // cur_state is STATIC_OBS1 in kuuve control
+    while(ros::ok()) {
 
 		if (cur_state == 1){
 			sa.run();

@@ -84,8 +84,9 @@ private:
 
 
 public:
-
     void initSetup();
+	ros::NodeHandle getNodeHandle();
+
     void pointCallback(const sensor_msgs::PointCloud2ConstPtr &input);
     void imuCallback(const sensor_msgs::ImuConstPtr &imu);
 	
