@@ -44,14 +44,34 @@
 #define SPEED3 1.5
 
 #define STEER 0.0
-#define MINSTEER -25
-#define MAXSTEER 25
+#define MIN_STEER -25
+#define MAX_STEER 25
+
+#define COMMON_YAW_DIFF 5
+#define LEFT_YAW_DIFF 22
+#define RIGHT_YAW_DIFF 30
 
 typedef pcl::PointXYZI PointType;
 
 class StaticAvoidance{
 
 private:
+	class ObstacleAlign {
+		public:
+			double yaw_diff;
+			double steer;
+
+			void setAlign(int obs_dir) {
+				if(obs_dir == LEFT_FIRST) {
+					this->yaw_diff = LEFT_YAW_DIFF;
+					this->steer = MIN_STEER;
+				} else { // obs_dir == RIGHT_FIRST
+					this->yaw_diff = RIGHT_YAW_DIFF;
+					this->steer = MAX_STEER;
+				}
+			}
+	};
+
     ros::NodeHandle nh_;
 
 	//publisher
@@ -72,7 +92,6 @@ private:
     //flag
 	bool get_first_imu;
 	bool get_second_imu;
-	int obs_align_;
 
 	//values
     int status_;
@@ -85,6 +104,8 @@ private:
 	double init_yaw_;
 	double second_yaw_;
 
+	ObstacleAlign obstacleAlign_;
+
 
 public:
     void initSetup();
@@ -94,7 +115,6 @@ public:
     void imuCallback(const sensor_msgs::ImuConstPtr &imu);
 	
 	void visualize(vector<geometry_msgs::Point> input_points);
-    void visualize(geometry_msgs::Point point);
 
     void run();
 	void fixObstacles();
@@ -105,6 +125,5 @@ public:
     StaticAvoidance() {
         initSetup();
     }
-
 };
 
