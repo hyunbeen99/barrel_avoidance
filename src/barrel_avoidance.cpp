@@ -7,9 +7,9 @@ void StaticAvoidance::initSetup() {
     imu_sub_ = nh_.subscribe("/gx5/imu/data", 10, &StaticAvoidance::imuCallback, this);
 
     status_ = 0;
-    init_yaw_ = 0;
-    second_yaw_ = 0;
-    yaw_degree_ = 0;
+    init_yaw_ = -1;
+    second_yaw_ = -1;
+    yaw_degree_ = -1;
 	
     get_first_imu = true;
     get_second_imu = true;
