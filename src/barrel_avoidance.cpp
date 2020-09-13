@@ -1,7 +1,7 @@
 #include "barrel_avoidance/barrel_avoidance.h"
 
 void StaticAvoidance::initSetup() {
-    pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/lidar_ackermann", 10);
+    pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/ctrl_cmd", 10);
     marker_pub_ = nh_.advertise<visualization_msgs::Marker>("/output_points", 10);
     sub_ = nh_.subscribe("/velodyne_points", 10, &StaticAvoidance::pointCallback, this);
     imu_sub_ = nh_.subscribe("/gx5/imu/data", 10, &StaticAvoidance::imuCallback, this);
@@ -121,7 +121,7 @@ void StaticAvoidance::run() {
 				ackerData_.drive.steering_angle = steer;
 				ackerData_.drive.speed = SPEED3;
 
-				nh_.setParam("/static_finish1", true);
+			//	nh_.setParam("/static_finish1", true);
 				break;
 
 			default :
@@ -197,14 +197,17 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "static_avoidance_vlp16");
     StaticAvoidance sa;
 
-	int cur_state = -2;
-	sa.getNodeHandle().getParam("/kuuve_state", cur_state); // cur_state is STATIC_OBS1 in kuuve control
+//	int cur_state = -2;
+//	sa.getNodeHandle().getParam("/kuuve_state", cur_state); // cur_state is STATIC_OBS1 in kuuve control
 
     while(ros::ok()) {
-		if (cur_state == 1){
+	/*	if (cur_state == 1){
 			sa.run();
 		}
 
 		ros::spinOnce();
-    }
+    }*/
+		sa.run();
+		ros::spinOnce();
+	}	
 }
