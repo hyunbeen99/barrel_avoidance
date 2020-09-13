@@ -35,7 +35,15 @@
 #include "clustering.cpp"
 
 #define _USE_MATH_DEFINES
-#define STANDARD_DIST 3.7
+#define STANDARD_DIST 4.5
+
+#define SPEED 0.0
+#define SPEED1 1.5 
+#define SPEED3 1.5
+
+#define STEER 0.0
+#define MINSTEER -25
+#define MAXSTEER 25
 
 typedef pcl::PointXYZI PointType;
 
@@ -88,7 +96,6 @@ public:
     
     double getDist(geometry_msgs::Point p);
     double calcSteer(geometry_msgs::Point p);
-	void print(vector<geometry_msgs::Point> points);
 
     StaticAvoidance() {
         initSetup();

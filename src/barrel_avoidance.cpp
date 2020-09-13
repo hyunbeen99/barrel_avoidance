@@ -44,17 +44,17 @@ void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &inpu
 
     if (status_ == 0){
         center_point_ = Cluster().cluster(input, 1, 15, -1.0, 1.0); 
-		print(center_point_);
+		//print(center_point_);
 		visualize(center_point_);
     }
     else if (status_ == 1){
 		center_point_ = Cluster().cluster(input, 1, 10, -1.5, 1.5); 
-		print(center_point_);
+		//print(center_point_);
 		visualize(center_point_);
     }
     else if (status_ == 2){
 		center_point_ = Cluster().cluster(input, 1, 5, -1.5, 1.5); 
-		print(center_point_);
+		//print(center_point_);
 		visualize(center_point_);
     }   
 
@@ -82,11 +82,11 @@ void StaticAvoidance::run() {
 				goalPoint.x = center_point_.at(0).x;
 				goalPoint.y = center_point_.at(1).y;
 
-				ackerData_.drive.steering_angle =  2* calcSteer(goalPoint);
-				ackerData_.drive.speed = 2.0;
+				ackerData_.drive.steering_angle = 1.2*calcSteer(goalPoint);
+				ackerData_.drive.speed = SPEED1;
 
-				if(abs(init_yaw_ - yaw_degree_) >= 3){
-					ackerData_.drive.steering_angle =  calcSteer(center_point_.at(1));
+				if(abs(init_yaw_ - yaw_degree_) >= 5){
+					ackerData_.drive.steering_angle = calcSteer(center_point_.at(1));
 				}
 
 				dist = getDist(center_point_.at(1));
@@ -94,7 +94,7 @@ void StaticAvoidance::run() {
 			}else if (center_point_.size() < 2){
 
 				ackerData_.drive.steering_angle = calcSteer(center_point_.at(0));
-				ackerData_.drive.speed = 2.0;
+				ackerData_.drive.speed = SPEED1;
 
 				dist = getDist(center_point_.at(0));
 
@@ -107,32 +107,40 @@ void StaticAvoidance::run() {
 		else if (status_ == 2){
 
 			if (fixed_point_.at(0).y > fixed_point_.at(1).y){
-				ackerData_.drive.steering_angle = -25;
+				ackerData_.drive.steering_angle = MINSTEER;
 			}
 			else if (fixed_point_.at(0).y < fixed_point_.at(1).y){
-				ackerData_.drive.steering_angle = 25;
+				ackerData_.drive.steering_angle = MAXSTEER;
 			}
 
 			cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
 
-			if (abs(second_yaw_ - yaw_degree_) > 25) {
-				steer = (second_yaw_ > yaw_degree_) ? -25 : 25;
-				status_++;
+			if (fixed_point_.at(0).y > fixed_point_.at(1).y){ // left first
+				if (abs(second_yaw_ - yaw_degree_) > 22) {
+					steer = (second_yaw_ > yaw_degree_) ? MINSTEER : MAXSTEER;
+					status_++;
+				}
+			}
+			else if (fixed_point_.at(0).y < fixed_point_.at(1).y){ // right first
+				if (abs(second_yaw_ - yaw_degree_) > 30) {
+					steer = (second_yaw_ > yaw_degree_) ? MINSTEER : MAXSTEER;
+					status_++;
+				}
 			}
 		}
 
 		else if (status_ == 3){
 			cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
 			ackerData_.drive.steering_angle = steer;
-			ackerData_.drive.speed = 2.0;
+			ackerData_.drive.speed = SPEED3;
 		}
 
 //		cout << "###########################################" << endl;
 //		cout << endl;
 
 	} catch(const std::out_of_range& oor){ 
-		ackerData_.drive.steering_angle = 0.0; 
-		ackerData_.drive.speed = 1.0;
+		ackerData_.drive.steering_angle = STEER; 
+		ackerData_.drive.speed = SPEED;
 		cout << "out of range!!!!! " << endl;
 	}
 
@@ -202,20 +210,6 @@ void StaticAvoidance::visualize(vector<geometry_msgs::Point> input_points) {
 	marker_pub_.publish(points);
 }
 
-void StaticAvoidance::print(vector<geometry_msgs::Point> points){
-	cout << "##################" << endl;
-
-	try {
-		cout << "0.X : " << points.at(0).x << endl;
-		cout << "0.Y : " << points.at(0).y << endl;
-		cout << "1.X : " << points.at(1).x  << endl;
-		cout << "1.Y : " << points.at(1).y  << endl;
-	} catch(const std::out_of_range& oor){ 
-	}
-
-	cout << "##################" << endl;
-	cout << endl;
-}
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "static_avoidance_vlp16");
