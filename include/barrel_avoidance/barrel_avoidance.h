@@ -39,7 +39,7 @@
 #define LEFT_FIRST 100
 #define RIGHT_FIRST 200
 
-#define SPEED 0.0
+#define SPEED 1.5
 #define SPEED1 1.5 
 #define SPEED3 1.5
 
@@ -48,7 +48,7 @@
 #define MAX_STEER 25
 
 #define COMMON_YAW_DIFF 5
-#define LEFT_YAW_DIFF 22
+#define LEFT_YAW_DIFF 25
 #define RIGHT_YAW_DIFF 30
 
 typedef pcl::PointXYZI PointType;
@@ -96,6 +96,7 @@ private:
 	//values
     int status_;
 	int steer;
+	int cur_state_;
 
 	double roll, pitch, yaw;
     double yaw_degree_;

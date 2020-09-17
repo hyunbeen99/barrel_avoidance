@@ -1,7 +1,7 @@
 #include "barrel_avoidance/barrel_avoidance.h"
 
 void StaticAvoidance::initSetup() {
-    pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/ctrl_cmd", 10);
+    pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/lidar_ackermann", 10);
     marker_pub_ = nh_.advertise<visualization_msgs::Marker>("/output_points", 10);
     sub_ = nh_.subscribe("/velodyne_points", 10, &StaticAvoidance::pointCallback, this);
     imu_sub_ = nh_.subscribe("/gx5/imu/data", 10, &StaticAvoidance::imuCallback, this);
@@ -11,6 +11,8 @@ void StaticAvoidance::initSetup() {
     second_yaw_ = -1;
     yaw_degree_ = -1;
 	
+	cur_state_ = -2;
+
     get_first_imu = true;
     get_second_imu = true;
 }
@@ -47,11 +49,11 @@ void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &inpu
 
 	switch(status_) {
 		case 0:
-			center_point_ = Cluster().cluster(input, 1, 15, -1.0, 1.0); 
+			center_point_ = Cluster().cluster(input, 1, 15, -1.0, 2.0); 
 			break;
 
 		case 1:
-			center_point_ = Cluster().cluster(input, 1, 10, -1.5, 1.5); 
+			center_point_ = Cluster().cluster(input, 1, 10, -1.5, 2.5); 
 			break;
 			
 		case 2:
@@ -68,73 +70,77 @@ void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &inpu
 void StaticAvoidance::run() {
 
     cout << "STATUS :: " << status_ << endl;
+	
+	nh_.getParam("/kuuve_state", cur_state_);
 
-	//seek two obstacles before start
-	try{
-		switch(status_) {
-			case 0:
-				fixObstacles();
-				break;
+	if (cur_state_ == 1) {
+		//seek two obstacles before start
+		try{
+			switch(status_) {
+				case 0:
+					fixObstacles();
+					break;
 
-			case 1: {
-					cout << "DIFF = " << abs(init_yaw_ - yaw_degree_) << endl;
-					geometry_msgs::Point goalPoint;
+				case 1: {
+						cout << "DIFF = " << abs(init_yaw_ - yaw_degree_) << endl;
+						geometry_msgs::Point goalPoint;
 
-					if(center_point_.size() == 2) {
-						
-						goalPoint.x = center_point_.at(0).x;
-						goalPoint.y = center_point_.at(1).y;
+						if(center_point_.size() == 2) {
+							
+							goalPoint.x = center_point_.at(0).x;
+							goalPoint.y = center_point_.at(1).y;
 
-						ackerData_.drive.steering_angle = 1.2*calcSteer(goalPoint);
-						ackerData_.drive.speed = SPEED1;
+							ackerData_.drive.steering_angle = 1.2*calcSteer(goalPoint);
+							ackerData_.drive.speed = SPEED1;
 
-						if(abs(init_yaw_ - yaw_degree_) >= COMMON_YAW_DIFF){
-							ackerData_.drive.steering_angle = calcSteer(center_point_.at(1));
+							if(abs(init_yaw_ - yaw_degree_) >= COMMON_YAW_DIFF){
+								ackerData_.drive.steering_angle = calcSteer(center_point_.at(1));
+							}
+
+							dist = getDist(center_point_.at(1));
+
+						}else if (center_point_.size() < 2){
+
+							ackerData_.drive.steering_angle = calcSteer(center_point_.at(0));
+							ackerData_.drive.speed = SPEED1;
+
+							dist = getDist(center_point_.at(0));
 						}
 
-						dist = getDist(center_point_.at(1));
-
-					}else if (center_point_.size() < 2){
-
-						ackerData_.drive.steering_angle = calcSteer(center_point_.at(0));
-						ackerData_.drive.speed = SPEED1;
-
-						dist = getDist(center_point_.at(0));
+						if (dist < STANDARD_DIST) status_++;
+						break;
 					}
 
-					if (dist < STANDARD_DIST) status_++;
+				case 2:
+					ackerData_.drive.steering_angle = obstacleAlign_.steer;
+					cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
+
+					if (abs(second_yaw_ - yaw_degree_) > obstacleAlign_.yaw_diff) {
+						steer = obstacleAlign_.steer;
+						status_++;
+					}
 					break;
-				}
 
-			case 2:
-				ackerData_.drive.steering_angle = obstacleAlign_.steer;
-				cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
+				case 3:
+					cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
+					ackerData_.drive.steering_angle = -steer;
+					ackerData_.drive.speed = SPEED3;
 
-				if (abs(second_yaw_ - yaw_degree_) > obstacleAlign_.yaw_diff) {
-					steer = obstacleAlign_.steer;
-					status_++;
-				}
-				break;
+					nh_.setParam("/static_finish1", true);
+					break;
 
-			case 3:
-				cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
-				ackerData_.drive.steering_angle = steer;
-				ackerData_.drive.speed = SPEED3;
+				default :
+					return;
+			}
 
-			//	nh_.setParam("/static_finish1", true);
-				break;
-
-			default :
-				return;
+		} catch(const std::out_of_range& oor) { 
+			ackerData_.drive.steering_angle = STEER; 
+			ackerData_.drive.speed = SPEED;
+			cout << "out of range!!!!! " << endl;
 		}
 
-	} catch(const std::out_of_range& oor) { 
-		ackerData_.drive.steering_angle = STEER; 
-		ackerData_.drive.speed = SPEED;
-		cout << "out of range!!!!! " << endl;
+		pub_.publish(ackerData_);
 	}
-
-	pub_.publish(ackerData_);
 }
 
 void StaticAvoidance::fixObstacles(){
@@ -197,16 +203,7 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "static_avoidance_vlp16");
     StaticAvoidance sa;
 
-//	int cur_state = -2;
-//	sa.getNodeHandle().getParam("/kuuve_state", cur_state); // cur_state is STATIC_OBS1 in kuuve control
-
     while(ros::ok()) {
-	/*	if (cur_state == 1){
-			sa.run();
-		}
-
-		ros::spinOnce();
-    }*/
 		sa.run();
 		ros::spinOnce();
 	}	
