@@ -60,13 +60,16 @@ private:
 	//publisher
     ros::Publisher pub_;
     ros::Publisher marker_pub_;
+    ros::Publisher state_pub_;
 
 	//subscriber
     ros::Subscriber sub_;
 	ros::Subscriber imu_sub_;
-
+	ros::Subscriber state_sub_;
+	
 	//message
     ackermann_msgs::AckermannDriveStamped ackerData_;
+	kuuve_control::Kuuve isStaticFinished_;
 	
 	//data
     vector<geometry_msgs::Point> center_point_;
@@ -78,6 +81,7 @@ private:
 	int obs_align_;
 
 	//values
+	int cur_state_;
     int status_;
 	int steer;
 
@@ -91,10 +95,11 @@ private:
 
 public:
     void initSetup();
-	ros::NodeHandle getNodeHandle();
 
-    void pointCallback(const sensor_msgs::PointCloud2ConstPtr &input);
+    void stateCallback(const kuuve_control::Kuuve::ConstPtr &state);
     void imuCallback(const sensor_msgs::ImuConstPtr &imu);
+    void pointCallback(const sensor_msgs::PointCloud2ConstPtr &input);
+
 	
 	void visualize(vector<geometry_msgs::Point> input_points);
     void visualize(geometry_msgs::Point point);
