@@ -33,6 +33,13 @@ void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 
 	yaw_degree_ = yaw*180/M_PI;
 
+	// cast (-0 ~ -180) to (360 ~ 180)
+	if (yaw_degree_ < 0) {
+		yaw_degree_ = yaw_degree_ + 360;
+	}
+
+//	cout << "YAWDEGREE : " << yaw_degree_ << endl;
+
     if (get_first_imu && status_ == 1) {
         init_yaw_ = yaw_degree_;
         get_first_imu = false;
@@ -87,7 +94,14 @@ void StaticAvoidance::run() {
 				ackerData_.drive.steering_angle = 1.2*calcSteer(goalPoint);
 				ackerData_.drive.speed = SPEED1;
 
-				if(abs(init_yaw_ - yaw_degree_) >= 5){
+				int yaw_diff_1 = (init_yaw_ >= yaw_degree_) ? init_yaw_ - yaw_degree_ : yaw_degree_ - init_yaw_;
+
+				if (yaw_diff_1 > 200){
+					yaw_diff_1 -= 360;
+					yaw_diff_1 = abs(yaw_diff_1);
+				}
+
+				if( yaw_diff_1 >= 5){
 					ackerData_.drive.steering_angle = calcSteer(center_point_.at(1));
 				}
 
@@ -111,9 +125,15 @@ void StaticAvoidance::run() {
 			ackerData_.drive.steering_angle = (obs_align_ == LEFT_FIRST) ? MINSTEER : MAXSTEER;
 			cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
 
-			int yaw_diff = (obs_align_ == LEFT_FIRST) ? 22 : 30;
 
-			if (abs(second_yaw_ - yaw_degree_) > yaw_diff) {
+			int yaw_diff_2 = (second_yaw_ >= yaw_degree_) ? second_yaw_ - yaw_degree_ : yaw_degree_ - second_yaw_;
+			if (yaw_diff_2 > 200){
+				yaw_diff_2 -= 360;
+				yaw_diff_2 = abs(yaw_diff_2);
+			}
+			
+			int diff = (obs_align_ == LEFT_FIRST) ? LEFT_ANG_GAP : RIGHT_ANG_GAP;
+			if (yaw_diff_2 > diff) {
 				steer = (second_yaw_ > yaw_degree_) ? MINSTEER : MAXSTEER;
 				status_++;
 			}
