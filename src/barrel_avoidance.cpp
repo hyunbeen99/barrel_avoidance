@@ -1,12 +1,12 @@
 #include "barrel_avoidance/barrel_avoidance.h"
 
 void StaticAvoidance::initSetup() {
-    pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/lidar_ackermann", 10);
+    pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/ctrl_cmd", 10);
     marker_pub_ = nh_.advertise<visualization_msgs::Marker>("/output_points", 10);
-    state_pub_ = nh_.advertise<kuuve_control::Kuuve>("/kuuve_msgs", 10);
+//    state_pub_ = nh_.advertise<kuuve_control::Kuuve>("/kuuve_msgs", 10);
 
     sub_ = nh_.subscribe("/velodyne_points", 10, &StaticAvoidance::pointCallback, this);
-	state_sub_ = nh_.subscribe("/kuuve_msgs", 10, &StaticAvoidance::stateCallback, this);
+//	state_sub_ = nh_.subscribe("/kuuve_msgs", 10, &StaticAvoidance::stateCallback, this);
     imu_sub_ = nh_.subscribe("/gx5/imu/data", 10, &StaticAvoidance::imuCallback, this);
 
     status_ = 0;
@@ -18,11 +18,13 @@ void StaticAvoidance::initSetup() {
     get_second_imu = true;
 
 	obs_align_ = -1;
-}
 
+	fix_obs_check_ = 0;
+}
+/*
 void StaticAvoidance::stateCallback(const kuuve_control::Kuuve::ConstPtr &state){
 	cur_state_ = state.kuuve_state;
-}
+}*/
 
 void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 
@@ -58,20 +60,16 @@ void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
     if (status_ == 0){
-        center_point_ = Cluster().cluster(input, 1, 15, -1.0, 1.0); 
-		//print(center_point_);
-		visualize(center_point_);
+        center_point_ = Cluster().cluster(input, 1, 10, -1.0, 1.0); 
     }
     else if (status_ == 1){
 		center_point_ = Cluster().cluster(input, 1, 10, -1.5, 1.5); 
-		//print(center_point_);
-		visualize(center_point_);
     }
     else if (status_ == 2){
 		center_point_ = Cluster().cluster(input, 1, 5, -1.5, 1.5); 
-		//print(center_point_);
-		visualize(center_point_);
     }   
+
+	visualize(center_point_);
 
 }
 
@@ -80,7 +78,7 @@ void StaticAvoidance::run() {
     cout << "STATUS :: " << status_ << endl;
 
 	//seek two obstacles before start
-	if (cur_state_ == 1){
+//	if (cur_state_ == 1){
 
 		try{
 			if(status_ == 0){
@@ -146,36 +144,41 @@ void StaticAvoidance::run() {
 
 			else if (status_ == 3){
 				cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
-				ackerData_.drive.steering_angle = steer;
+				ackerData_.drive.steering_angle = steer/2;
 				ackerData_.drive.speed = SPEED3;
 
-				isStaticFinished_.static_finish = true;
+		//		isStaticFinished_.static_finish = true;
 
-				state_pub_.publish(isStaticFinished_);
+		//		state_pub_.publish(isStaticFinished_);
 			}
 
 		} catch(const std::out_of_range& oor){ 
-			ackerData_.drive.steering_angle = STEER; 
-			ackerData_.drive.speed = SPEED;
+			ackerData_.drive.steering_angle = INIT_STEER; 
+			ackerData_.drive.speed = INIT_SPEED;
 			cout << "out of range!!!!! " << endl;
 		}
-	}
+//	}
 
 	pub_.publish(ackerData_);
 }
 
 void StaticAvoidance::fixObstacles(){
-
-	if (center_point_.size() == 2){
+	if(center_point_.size() == 2){
+		if(fix_obs_check_ < 10) {
+			fix_obs_check_++;
+			return;
+		}
 
 		fixed_point_ = center_point_;
 
 		obs_align_ = (fixed_point_.at(0).y > fixed_point_.at(1).y) ? LEFT_FIRST : RIGHT_FIRST;
 		status_++;
 
-	}else if (center_point_.size() < 2){
-		ackerData_.drive.steering_angle = STEER; 
-		ackerData_.drive.speed = SPEED;
+	} else if (center_point_.size() < 2) {
+		fix_obs_check_ = 0;
+
+		ackerData_.drive.steering_angle = INIT_STEER; 
+		ackerData_.drive.speed = INIT_SPEED;
 	} 
 }
 
@@ -188,34 +191,8 @@ double StaticAvoidance::calcSteer(geometry_msgs::Point point_){
 	return -atan(point_.y/point_.x) * 180 / M_PI;
 }
 
-void StaticAvoidance::visualize(geometry_msgs::Point point) {
-
-	visualization_msgs::Marker points;
-    
-	points.header.frame_id = "velodyne";
-	points.header.stamp = ros::Time::now();
-	points.ns = "points_and_lines";
-	points.action = visualization_msgs::Marker::ADD;
-	points.pose.orientation.w = 1.0;
-	points.id = 0;
-	points.type = visualization_msgs::Marker::POINTS;
-	points.scale.x = 0.1; 
-	points.scale.y = 0.1;
-	points.color.a = 1.0;
-	points.color.b = 1.0f;
-
-	geometry_msgs::Point p;
-
-	p.x = point.x;
-	p.y = point.y;
-	p.z = point.z;
-	points.points.push_back(p);
-
-	marker_pub_.publish(points);
-}
 
 void StaticAvoidance::visualize(vector<geometry_msgs::Point> input_points) {
-
 	visualization_msgs::Marker points;
 
 	points.header.frame_id = "velodyne";

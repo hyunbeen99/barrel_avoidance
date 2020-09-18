@@ -39,11 +39,12 @@
 #define LEFT_FIRST 100
 #define RIGHT_FIRST 200
 
-#define SPEED 0.0
+#define INIT_SPEED 1.5
+#define INIT_STEER 0.0
+
 #define SPEED1 1.5 
 #define SPEED3 1.5
 
-#define STEER 0.0
 #define MINSTEER -25
 #define MAXSTEER 25
 
@@ -69,7 +70,7 @@ private:
 	
 	//message
     ackermann_msgs::AckermannDriveStamped ackerData_;
-	kuuve_control::Kuuve isStaticFinished_;
+//	kuuve_control::Kuuve isStaticFinished_;
 	
 	//data
     vector<geometry_msgs::Point> center_point_;
@@ -79,6 +80,7 @@ private:
 	bool get_first_imu;
 	bool get_second_imu;
 	int obs_align_;
+	int fix_obs_check_;
 
 	//values
 	int cur_state_;
@@ -96,7 +98,7 @@ private:
 public:
     void initSetup();
 
-    void stateCallback(const kuuve_control::Kuuve::ConstPtr &state);
+  //  void stateCallback(const kuuve_control::Kuuve::ConstPtr &state);
     void imuCallback(const sensor_msgs::ImuConstPtr &imu);
     void pointCallback(const sensor_msgs::PointCloud2ConstPtr &input);
 
