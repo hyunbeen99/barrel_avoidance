@@ -33,6 +33,8 @@
 #include "tuple"
 
 #include "clustering.cpp"
+//#include "kuuve_control/Kuuve.h"
+#include "std_msgs/Bool.h"
 
 #define _USE_MATH_DEFINES
 #define STANDARD_DIST 4.5
@@ -70,7 +72,7 @@ private:
 	
 	//message
     ackermann_msgs::AckermannDriveStamped ackerData_;
-//	kuuve_control::Kuuve isStaticFinished_;
+	std_msgs::Bool isStaticFinished_;
 	
 	//data
     vector<geometry_msgs::Point> center_point_;
