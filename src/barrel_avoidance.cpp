@@ -3,7 +3,7 @@
 void StaticAvoidance::initSetup() {
     pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/lidar_ackermann", 10);
     marker_pub_ = nh_.advertise<visualization_msgs::Marker>("/output_points", 10);
-    state_pub_ = nh_.advertise<kuuve_control::Kuuve>("/kuuve_msgs", 10);
+    state_pub_ = nh_.advertise<std_msgs::Bool>("/isStaticFinish", 10);
 
     sub_ = nh_.subscribe("/velodyne_points", 10, &StaticAvoidance::pointCallback, this);
 	state_sub_ = nh_.subscribe("/kuuve_msgs", 10, &StaticAvoidance::stateCallback, this);
@@ -21,7 +21,7 @@ void StaticAvoidance::initSetup() {
 }
 
 void StaticAvoidance::stateCallback(const kuuve_control::Kuuve::ConstPtr &state){
-	cur_state_ = state.kuuve_state;
+	cur_state_ = state->kuuve_state;
 }
 
 void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
@@ -149,7 +149,7 @@ void StaticAvoidance::run() {
 				ackerData_.drive.steering_angle = steer;
 				ackerData_.drive.speed = SPEED3;
 
-				isStaticFinished_.static_finish = true;
+				isStaticFinished_.data = true;
 
 				state_pub_.publish(isStaticFinished_);
 			}
