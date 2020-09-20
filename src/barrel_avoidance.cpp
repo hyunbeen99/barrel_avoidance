@@ -60,10 +60,10 @@ void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
     if (status_ == 0){
-        center_point_ = Cluster().cluster(input, 1, 10, -1.0, 1.0); 
+        center_point_ = Cluster().cluster(input, 1, 10, -1.6, 1.6); 
     }
     else if (status_ == 1){
-		center_point_ = Cluster().cluster(input, 1, 10, -1.5, 1.5); 
+		center_point_ = Cluster().cluster(input, 1, 10, -1.6, 1.6); 
     }
     else if (status_ == 2){
 		center_point_ = Cluster().cluster(input, 1, 5, -1.5, 1.5); 
@@ -162,7 +162,7 @@ void StaticAvoidance::run() {
 }
 
 void StaticAvoidance::fixObstacles(){
-	if(center_point_.size() == 2){
+	if(center_point_.size() == 2 && getDist(center_point_.at(0)) < FIX_DIST) {
 		if(fix_obs_check_ < 10) {
 			fix_obs_check_++;
 			return;
@@ -173,7 +173,7 @@ void StaticAvoidance::fixObstacles(){
 		obs_align_ = (fixed_point_.at(0).y > fixed_point_.at(1).y) ? LEFT_FIRST : RIGHT_FIRST;
 		status_++;
 
-	} else if (center_point_.size() < 2) {
+	} else if(center_point_.size() < 2) {
 		fix_obs_check_ = 0;
 
 		ackerData_.drive.steering_angle = INIT_STEER; 

@@ -38,6 +38,8 @@
 
 #define _USE_MATH_DEFINES
 #define STANDARD_DIST 4.5
+#define FIX_DIST 4.0
+
 #define LEFT_FIRST 100
 #define RIGHT_FIRST 200
 
