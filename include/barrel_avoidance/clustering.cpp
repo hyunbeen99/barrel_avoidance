@@ -231,6 +231,7 @@ vector<geometry_msgs::Point> Cluster::cluster(const sensor_msgs::PointCloud2Cons
 
 vector<geometry_msgs::Point> Cluster::filter(vector<geometry_msgs::Point> points) { 
 	points = sort(points);
+//	points = sortFilter(points);
 
 	if(points.size() > 4) {
 		vector<geometry_msgs::Point> new_points;
@@ -245,6 +246,7 @@ vector<geometry_msgs::Point> Cluster::filter(vector<geometry_msgs::Point> points
 }
 
 vector<geometry_msgs::Point> Cluster::sort(vector<geometry_msgs::Point> list) {
+
   int i, j, least;
   int size = list.size();
 
@@ -266,6 +268,23 @@ vector<geometry_msgs::Point> Cluster::sort(vector<geometry_msgs::Point> list) {
   }
 
   return list;
+}
+
+vector<geometry_msgs::Point> Cluster::sortFilter(vector<geometry_msgs::Point> list) {
+
+	vector<int> del_elements;
+
+	for(int i=0;i<list.size()-1;i++) {
+		if(abs(list.at(i).x-list.at(i+1).x) < 2.0) { // TODO: make it to parameter
+			del_elements.push_back(i+1);
+		}
+	}
+
+/*	for(int i=0;i<del_elements.size();i++) {
+		list.erase(del_elements.at(i));
+	}*/
+
+	return list;
 }
 
 double Cluster::getDist(geometry_msgs::Point point) {

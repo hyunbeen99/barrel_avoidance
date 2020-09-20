@@ -21,6 +21,7 @@ void StaticAvoidance::initSetup() {
 
 	fix_obs_check_ = 0;
 }
+
 /*
 void StaticAvoidance::stateCallback(const kuuve_control::Kuuve::ConstPtr &state){
 	cur_state_ = state->kuuve_state;

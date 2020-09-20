@@ -33,5 +33,6 @@ class Cluster {
 		vector<geometry_msgs::Point> cluster(const sensor_msgs::PointCloud2ConstPtr &input, double x_min, double x_max, double y_min, double y_max);
 		vector<geometry_msgs::Point> filter(vector<geometry_msgs::Point> points);
 		vector<geometry_msgs::Point> sort(vector<geometry_msgs::Point> list);
+		vector<geometry_msgs::Point> sortFilter(vector<geometry_msgs::Point> list);
 		double getDist(geometry_msgs::Point point);
 };
