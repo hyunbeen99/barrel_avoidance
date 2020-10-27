@@ -33,12 +33,12 @@
 #include "tuple"
 
 #include "clustering.cpp"
-//#include "kuuve_control/Kuuve.h"
+#include "kuuve_control/Kuuve.h"
 #include "std_msgs/Bool.h"
 
 #define _USE_MATH_DEFINES
-#define STANDARD_DIST 4.5
-#define FIX_DIST 4.0
+#define STANDARD_DIST 5.0
+#define FIX_DIST 5.0
 
 #define LEFT_FIRST 100
 #define RIGHT_FIRST 200
@@ -46,14 +46,14 @@
 #define INIT_SPEED 1.5
 #define INIT_STEER 0.0
 
-#define SPEED1 1.5 
-#define SPEED3 1.5
+#define SPEED1 2.0
+#define SPEED3 2.0
 
 #define MINSTEER -25
 #define MAXSTEER 25
 
 #define LEFT_ANG_GAP 22
-#define RIGHT_ANG_GAP 30
+#define RIGHT_ANG_GAP 22
 
 typedef pcl::PointXYZI PointType;
 
@@ -102,7 +102,7 @@ private:
 public:
     void initSetup();
 
-  //  void stateCallback(const kuuve_control::Kuuve::ConstPtr &state);
+    void stateCallback(const kuuve_control::Kuuve::ConstPtr &state);
     void imuCallback(const sensor_msgs::ImuConstPtr &imu);
     void pointCallback(const sensor_msgs::PointCloud2ConstPtr &input);
 

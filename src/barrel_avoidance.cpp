@@ -1,12 +1,12 @@
 #include "barrel_avoidance/barrel_avoidance.h"
 
 void StaticAvoidance::initSetup() {
-    pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/ctrl_cmd", 10);
+    pub_ = nh_.advertise<ackermann_msgs::AckermannDriveStamped>("/lidar_ackermann", 10);
     marker_pub_ = nh_.advertise<visualization_msgs::Marker>("/output_points", 10);
     state_pub_ = nh_.advertise<std_msgs::Bool>("/isStaticFinish", 10);
 
     sub_ = nh_.subscribe("/velodyne_points", 10, &StaticAvoidance::pointCallback, this);
-//	state_sub_ = nh_.subscribe("/kuuve_msgs", 10, &StaticAvoidance::stateCallback, this);
+	state_sub_ = nh_.subscribe("/kuuve_msgs", 10, &StaticAvoidance::stateCallback, this);
     imu_sub_ = nh_.subscribe("/gx5/imu/data", 10, &StaticAvoidance::imuCallback, this);
 
     status_ = 0;
@@ -22,10 +22,9 @@ void StaticAvoidance::initSetup() {
 	fix_obs_check_ = 0;
 }
 
-/*
 void StaticAvoidance::stateCallback(const kuuve_control::Kuuve::ConstPtr &state){
 	cur_state_ = state->kuuve_state;
-}*/
+}
 
 void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 
@@ -52,6 +51,7 @@ void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
     }
 
     if (get_second_imu && status_ == 2) {
+		cout << second_yaw_ << endl;
         second_yaw_ = yaw_degree_;
         get_second_imu = false;
     }
@@ -61,10 +61,10 @@ void StaticAvoidance::imuCallback(const sensor_msgs::ImuConstPtr &imu){
 void StaticAvoidance::pointCallback(const sensor_msgs::PointCloud2ConstPtr &input) {
 
     if (status_ == 0){
-        center_point_ = Cluster().cluster(input, 1, 10, -1.6, 1.6); 
+        center_point_ = Cluster().cluster(input, 1, 15, -1.6, 1.6); 
     }
     else if (status_ == 1){
-		center_point_ = Cluster().cluster(input, 1, 10, -1.6, 1.6); 
+		center_point_ = Cluster().cluster(input, 1, 15, -1.6, 1.6); 
     }
     else if (status_ == 2){
 		center_point_ = Cluster().cluster(input, 1, 5, -1.5, 1.5); 
@@ -79,7 +79,7 @@ void StaticAvoidance::run() {
     cout << "STATUS :: " << status_ << endl;
 
 	//seek two obstacles before start
-//	if (cur_state_ == 1){
+	if (cur_state_ == 1){
 
 		try{
 			if(status_ == 0){
@@ -87,7 +87,7 @@ void StaticAvoidance::run() {
 			}
 			else if (status_ == 1) {
 
-				cout << "DIFF = " << abs(init_yaw_ - yaw_degree_) << endl;
+				//cout << "DIFF = " << abs(init_yaw_ - yaw_degree_) << endl;
 				geometry_msgs::Point goalPoint;
 
 				if(center_point_.size() == 2) {
@@ -127,11 +127,17 @@ void StaticAvoidance::run() {
 			else if (status_ == 2){
 				
 				ackerData_.drive.steering_angle = (obs_align_ == LEFT_FIRST) ? MINSTEER : MAXSTEER;
-				cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
+				//cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
 
+				if(second_yaw_ == 0) {
+					return;
+				}
 
 				int yaw_diff_2 = (second_yaw_ >= yaw_degree_) ? second_yaw_ - yaw_degree_ : yaw_degree_ - second_yaw_;
-				if (yaw_diff_2 > 200){
+				//cout << "YAW_DIFF = " << yaw_diff_2 << endl;
+				//cout << "second_yaw = " << second_yaw_ << endl;
+				//cout << "yaw_degree = " << yaw_degree_ << endl;
+				if (yaw_diff_2 > 180) {
 					yaw_diff_2 -= 360;
 					yaw_diff_2 = abs(yaw_diff_2);
 				}
@@ -144,12 +150,14 @@ void StaticAvoidance::run() {
 			}
 
 			else if (status_ == 3){
-				cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
+				//cout << "DIFF = " << second_yaw_ - yaw_degree_ << endl;
+				//cout << "second_yaw = " << second_yaw_ << endl;
+				//cout << "yaw_degree = " << yaw_degree_ << endl;
 				ackerData_.drive.steering_angle = steer/2;
 				ackerData_.drive.speed = SPEED3;
 
 				isStaticFinished_.data = true;
-		//		state_pub_.publish(isStaticFinished_);
+				state_pub_.publish(isStaticFinished_);
 			}
 
 		} catch(const std::out_of_range& oor){ 
@@ -157,7 +165,7 @@ void StaticAvoidance::run() {
 			ackerData_.drive.speed = INIT_SPEED;
 			cout << "out of range!!!!! " << endl;
 		}
-//	}
+	}
 
 	pub_.publish(ackerData_);
 }
@@ -170,6 +178,12 @@ void StaticAvoidance::fixObstacles(){
 		}
 
 		fixed_point_ = center_point_;
+		cout << fixed_point_.at(0).x << endl;
+		cout << fixed_point_.at(0).y << endl;
+		cout << endl;
+
+		cout << fixed_point_.at(1).x << endl;
+		cout << fixed_point_.at(1).y << endl;
 
 		obs_align_ = (fixed_point_.at(0).y > fixed_point_.at(1).y) ? LEFT_FIRST : RIGHT_FIRST;
 		status_++;
