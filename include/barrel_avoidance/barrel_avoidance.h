@@ -37,8 +37,8 @@
 #include "std_msgs/Bool.h"
 
 #define _USE_MATH_DEFINES
-#define STANDARD_DIST 5.0
-#define FIX_DIST 5.0
+#define STANDARD_DIST 4.5
+#define FIX_DIST 4.0
 
 #define LEFT_FIRST 100
 #define RIGHT_FIRST 200
@@ -46,14 +46,14 @@
 #define INIT_SPEED 1.5
 #define INIT_STEER 0.0
 
-#define SPEED1 2.0
-#define SPEED3 2.0
+#define SPEED1 1.5 
+#define SPEED3 1.5
 
 #define MINSTEER -25
 #define MAXSTEER 25
 
 #define LEFT_ANG_GAP 22
-#define RIGHT_ANG_GAP 22
+#define RIGHT_ANG_GAP 30
 
 typedef pcl::PointXYZI PointType;
 
@@ -66,6 +66,7 @@ private:
     ros::Publisher pub_;
     ros::Publisher marker_pub_;
     ros::Publisher state_pub_;
+    ros::Publisher static_start_pub_;
 
 	//subscriber
     ros::Subscriber sub_;
@@ -75,6 +76,7 @@ private:
 	//message
     ackermann_msgs::AckermannDriveStamped ackerData_;
 	std_msgs::Bool isStaticFinished_;
+	std_msgs::Bool isStaticStart_;
 	
 	//data
     vector<geometry_msgs::Point> center_point_;
@@ -85,6 +87,7 @@ private:
 	bool get_second_imu;
 	int obs_align_;
 	int fix_obs_check_;
+	int status_one_check_;
 
 	//values
 	int cur_state_;
